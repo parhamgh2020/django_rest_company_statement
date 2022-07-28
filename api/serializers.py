@@ -5,12 +5,11 @@ from .models import DimCompany,FactStatement
 class DimCompanySerializer(serializers.ModelSerializer):
     class Meta:
         model = DimCompany
-        fields = ['symbol','name']
-        # fields = ['symbol','name','industry','state',]
+        fields = ('symbol','name','industry','state',)
 
 
 
 class FactStatementSerializer(serializers.ModelSerializer):
     class Meta:
         model = FactStatement
-        fields = ['item_id','item_value','unit','company_id',]
+        fields = ('item_id','item_value','unit','company_id',)
