@@ -1,5 +1,6 @@
 from statistics import mode
 from django.db import models
+from django_pandas.managers import DataFrameManager
 
 
 class DimCompany(models.Model):
@@ -7,6 +8,8 @@ class DimCompany(models.Model):
     name = models.CharField(max_length=255)
     industry = models.CharField(max_length=255, null=True)
     state = models.SmallIntegerField()
+
+    objects = DataFrameManager()
 
     class Meta:
         db_table = 'dim_company'
@@ -20,10 +23,12 @@ class FactStatement(models.Model):
     period = models.SmallIntegerField()
     period_end_to_date = models.CharField(max_length=20)
 
+    objects = DataFrameManager()
+
     def year(self):
         date_field: str = self.period_end_to_date
         return int(date_field.split("-")[0])
-    
+
     def month(self):
         date_field: str = self.period_end_to_date
         return int(date_field.split("-")[1])
