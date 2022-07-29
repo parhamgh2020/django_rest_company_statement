@@ -2,7 +2,8 @@ from pprint import pprint
 from typing import Union
 
 from django.db.models import Q
-from pandas import DataFrame, Series
+from pandas import DataFrame, Series, concat
+from pandas.core.groupby import DataFrameGroupBy
 from rest_framework.exceptions import ValidationError
 
 from .models import DimCompany, FactStatement
@@ -152,12 +153,40 @@ class MetricStatement:
         df = df.assign(item_id=[5000 for _ in range(len(df))])
         return df
 
+    @staticmethod
+    def get_metric_3(input_data: dict):
+        qs = FactStatement.objects.filter(item_id__in=[101, 102])
+        df: DataFrame = qs.to_dataframe(['item_id', 'item_value', 'company__id', 'period', 'period_end_to_date'])
+        df['year'] = df.apply(lambda row: int(row['period_end_to_date'].split('-')[0]), axis=1)
+        # year separation
+        if input_data.get('year__gte'):
+            df = df.loc[df['year'] >= input_data['year__gte']]
+        if input_data.get('year__lte'):
+            df = df.loc[df['year'] <= input_data['year__lte']]
+        # period separation
+        if input_data.get('company_id'):
+            df = df.loc[df['company__id'].isin(input_data['company_id'])]
+        # period separation
+        if input_data.get('period'):
+            df = df.loc[df['period'].isin(input_data['period'])]
+        #  sum
+        df_101: DataFrame = df.loc[df['item_id'] == 101]
+        df_102: DataFrame = df.loc[df['item_id'] == 102]
+        df_102['year'] += 1
+        df = concat([df_101, df_102])
+        sf = df.groupby(['company__id', 'period', 'year'])['item_value'].sum()
+        df = sf.reset_index(name='item_value')
+        df = df.assign(item_id=[6000 for _ in range(len(df))])
+        return df
+
     @classmethod
     def retrieve_data(cls, input_data: dict):
         if input_data.get('metric') == 1:
             return cls.get_metric_1(input_data)
         elif input_data.get('metric') == 2:
             return cls.get_metric_2(input_data)
+        elif input_data.get('metric') == 3:
+            return cls.get_metric_3(input_data)
 
 
 class SearchCompany:
