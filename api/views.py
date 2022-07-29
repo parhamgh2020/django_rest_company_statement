@@ -1,16 +1,12 @@
-from inspect import trace
-from math import ceil
 import traceback
-from pprint import pprint
+from math import ceil
 
-from django.shortcuts import render
-from rest_framework.response import Response
 from rest_framework.decorators import api_view
-from .serializers import DimCompanySerializer, FactStatementSerializer
 from rest_framework.exceptions import APIException
+from rest_framework.response import Response
+
 from .manager import SearchCompany, ValidateSearchStatement, MetricStatement
-from .models import FactStatement
-from django_pandas.io import read_frame
+from .serializers import DimCompanySerializer
 
 
 @api_view(['GET'])
@@ -19,15 +15,15 @@ def search_statement(request):
     search for statement
     """
     input_data = dict()
+    input_data['metric'] = request.query_params.get('metric')
+    input_data['year__gte'] = request.query_params.get('year__gte')
+    input_data['year__lte'] = request.query_params.get('year__lte')
+    input_data['period'] = request.query_params.get('period')
+    input_data['company_id'] = request.query_params.get('company_id')
+    input_data['page'] = request.query_params.get('page')
+    input_data['size'] = request.query_params.get('size')
+    input_data = ValidateSearchStatement.validate_input_data(input_data)
     try:
-        input_data['metric'] = request.query_params.get('metric')
-        input_data['year__gte'] = request.query_params.get('year__gte')
-        input_data['year__lte'] = request.query_params.get('year__lte')
-        input_data['period'] = request.query_params.get('period')
-        input_data['company_id'] = request.query_params.get('company_id')
-        input_data['page'] = request.query_params.get('page')
-        input_data['size'] = request.query_params.get('size')
-        input_data = ValidateSearchStatement.validate_input_data(input_data)
         df = MetricStatement.retrieve_data(input_data)
         data = df.to_dict(orient="records")
         page, size = input_data['page'], input_data['size']
@@ -63,16 +59,14 @@ def search_statement(request):
 @api_view(['GET'])
 def search_company(request):
     """
-    search by name or symbol or both on dim_comapany table
+    search by name or symbol or both on dim_company table
     """
+    name = request.query_params.get('name')
+    symbol = request.query_params.get('symbol')
+    page = request.query_params.get('page')
+    size = request.query_params.get('size')
+    page, size = SearchCompany.validate_pagination(page, size)
     try:
-        # param
-        name = request.query_params.get('name')
-        symbol = request.query_params.get('symbol')
-        page = request.query_params.get('page')
-        size = request.query_params.get('size')
-        page, size = SearchCompany.validate_pagination(page, size)
-        #  query
         queryset, total = SearchCompany.get_queryset(name, symbol)
         if not total:
             return Response({

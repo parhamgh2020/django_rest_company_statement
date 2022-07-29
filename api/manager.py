@@ -1,9 +1,7 @@
-from pprint import pprint
 from typing import Union
 
 from django.db.models import Q
-from pandas import DataFrame, Series, concat
-from pandas.core.groupby import DataFrameGroupBy
+from pandas import DataFrame, concat
 from rest_framework.exceptions import ValidationError
 
 from .models import DimCompany, FactStatement
@@ -91,7 +89,7 @@ class ValidateSearchStatement:
         metric validation
         """
         if metric is None:
-            return None
+            raise ValidationError('metric should be 1 or 2 or 3')
         try:
             metric = int(metric)
         except Exception as err:
@@ -187,6 +185,8 @@ class MetricStatement:
             return cls.get_metric_2(input_data)
         elif input_data.get('metric') == 3:
             return cls.get_metric_3(input_data)
+        else:
+            raise ValidationError('metric should be 1 or 2 or 3')
 
 
 class SearchCompany:
