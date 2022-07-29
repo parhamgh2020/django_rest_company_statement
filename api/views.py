@@ -1,10 +1,12 @@
+from inspect import trace
 from math import ceil
+import traceback
 from django.shortcuts import render
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
-from .serializers import DimCompanySerializer
+from .serializers import DimCompanySerializer, FactStatementSerializer
 from rest_framework.exceptions import APIException
-from .manager import get_queryset, validate_pagination
+from .manager import SearchCompany, SearchStatement
 
 
 @api_view(['GET'])
@@ -18,9 +20,9 @@ def search_company(request):
         symbol = request.query_params.get('symbol')
         page = request.query_params.get('page')
         size = request.query_params.get('size')
-        page, size = validate_pagination(page, size)
+        page, size = SearchCompany.validate_pagination(page, size)
         #  query
-        queryset, total = get_queryset(name, symbol)
+        queryset, total = SearchCompany.get_queryset(name, symbol)
         if not total:
             return Response({
                 'status_code': 200,
@@ -51,21 +53,28 @@ def search_company(request):
         raise APIException(err)
 
 
-
 @api_view(['GET'])
 def search_statement(request):
     """
     search for statement 
     """
-    metric = request.query_params.get('metric')
-    year__gte = request.query_params.get('year__gte')
-    year__lte = request.query_params.get('year__lte')
-    period = request.query_params.get('period')
-    company_id = request.query_params.get('company_id')
-    return Response({
-        'metric': metric,
-        'year__gte': year__gte,
-        'year__lte': year__lte,
-        'period': period,
-        'company_id': company_id,
-    })
+    try:
+        metric = request.query_params.get('metric')
+        year__gte = request.query_params.get('year__gte')
+        year__lte = request.query_params.get('year__lte')
+        period = request.query_params.get('period')
+        company_id = request.query_params.get('company_id')
+        queryset = SearchStatement.metric_1()
+        serializers = FactStatementSerializer(
+            queryset, many=True, context={'request': request})
+        return Response({
+            'metric': metric,
+            'year__gte': year__gte,
+            'year__lte': year__lte,
+            'period': period,
+            'company_id': company_id,
+            'result': serializers.data
+        })
+    except Exception as err:
+        print(traceback.format_exc())
+        raise APIException(err)

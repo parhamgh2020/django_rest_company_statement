@@ -13,17 +13,20 @@ class DimCompany(models.Model):
 
 
 class FactStatement(models.Model):
-    item_id = models.ForeignKey('Item', on_delete=models.PROTECT)
+    item_id = models.IntegerField()
     item_value = models.IntegerField()
     unit = models.CharField(max_length=255)
-    company_id = models.ForeignKey(DimCompany, models.PROTECT)
+    company = models.ForeignKey(DimCompany, models.PROTECT)
     period = models.SmallIntegerField()
-    period_end_to_date = models.DateField()
+    period_end_to_date = models.CharField(max_length=20)
+
+    def year(self):
+        date_field: str = self.period_end_to_date
+        return int(date_field.split("-")[0])
+    
+    def month(self):
+        date_field: str = self.period_end_to_date
+        return int(date_field.split("-")[1])
 
     class Meta:
         db_table = 'fact_statement'
-
-
-class Item(models.Model):
-    id = models.IntegerField(primary_key=True)
-    no_field = models.CharField(max_length=255, default='no filed')
